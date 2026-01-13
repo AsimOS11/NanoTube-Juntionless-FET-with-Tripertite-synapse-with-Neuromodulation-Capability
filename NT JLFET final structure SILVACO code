@@ -1,0 +1,99 @@
+go atlas
+
+# ------------------------------------------------------------------
+# 1. MESH (Cylindrical Nanotube)
+# ------------------------------------------------------------------
+mesh cyl
+
+# X-MESH
+x.mesh loc=0.000 spac=0.005
+x.mesh loc=0.020 spac=0.002
+x.mesh loc=0.045 spac=0.001
+x.mesh loc=0.065 spac=0.001
+x.mesh loc=0.090 spac=0.002
+x.mesh loc=0.110 spac=0.005
+
+# Y-MESH
+y.mesh loc=0.000  spac=0.001
+y.mesh loc=0.0025 spac=0.0005
+y.mesh loc=0.010  spac=0.001
+y.mesh loc=0.011  spac=0.0005
+y.mesh loc=0.016  spac=0.002
+y.mesh loc=0.021  spac=0.0005
+y.mesh loc=0.022  spac=0.0005
+y.mesh loc=0.027  spac=0.002
+
+# ------------------------------------------------------------------
+# 2. REGIONS (Using Real Materials from Paper)
+# ------------------------------------------------------------------
+
+# Core Gate (Inner) -> Tungsten (Mid-gap metal, 4.5eV target)
+region num=1 material=Tungsten x.min=0.00 x.max=0.065 y.min=0.000 y.max=0.010
+region num=2 material=Tungsten x.min=0.065 x.max=0.110 y.min=0.000 y.max=0.0025
+
+# Fill Oxide -> SiO2
+region num=3 material=SiO2 x.min=0.065 x.max=0.110 y.min=0.0025 y.max=0.010
+
+# Inner Tunnel Oxide -> SiO2
+region num=4 material=SiO2 x.min=0.00 x.max=0.11 y.min=0.010 y.max=0.011
+
+# Silicon Body (Channel) -> Silicon
+region num=5 material=Silicon x.min=0.00 x.max=0.11 y.min=0.011 y.max=0.021
+
+# Outer Oxide -> SiO2
+region num=6 material=SiO2 x.min=0.020 x.max=0.090 y.min=0.021 y.max=0.022
+
+# Outer Shell Gate -> Palladium (High work function metal, 5.2eV target)
+region num=7 material=Palladium x.min=0.045 x.max=0.065 y.min=0.022 y.max=0.027
+
+# Spacers -> SiO2
+region num=8 material=SiO2 x.min=0.020 x.max=0.045 y.min=0.022 y.max=0.027
+region num=9 material=SiO2 x.min=0.065 x.max=0.090 y.min=0.022 y.max=0.027
+
+# Source & Drain Contacts -> Aluminum (Standard contact metal)
+region num=10 material=Aluminum x.min=0.000 x.max=0.020 y.min=0.021 y.max=0.027
+region num=11 material=Aluminum x.min=0.090 x.max=0.110 y.min=0.021 y.max=0.027
+
+# ------------------------------------------------------------------
+# 3. ELECTRODES
+# ------------------------------------------------------------------
+# Core Gate
+electrode name=coregate region=1
+electrode name=coregate region=2
+
+# Outer Gate
+electrode name=gate region=7
+
+# Source & Drain
+electrode name=source region=10
+electrode name=drain  region=11
+
+# ------------------------------------------------------------------
+# 4. DOPING
+# ------------------------------------------------------------------
+# Uniform N-type doping for the Junctionless Silicon body
+doping uniform concentration=1e19 n.type region=5
+
+# ------------------------------------------------------------------
+# 5. PHYSICS & MODELS
+# ------------------------------------------------------------------
+# Define workfunctions to match Table I exactly
+# Even though we set materials, we override to ensure exact values
+contact name=gate workfun=5.2
+contact name=coregate workfun=4.5
+
+# Models for Nanotube JLFET (Tunneling is critical)
+models cvt srh fermi bbt.nonlocal print
+material material=Silicon me.tunnel=0.4 mh.tunnel=0.65
+
+# ------------------------------------------------------------------
+# 6. INITIAL SOLUTION
+# ------------------------------------------------------------------
+method gummel newton 
+
+solve init
+
+# Save the structure
+save outf=nt_jlfet_real_materials.str
+tonyplot nt_jlfet_real_materials.str
+quit
